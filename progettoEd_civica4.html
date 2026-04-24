@@ -239,15 +239,16 @@ let current=0,answers=new Array(questions.length).fill(null);
 
 /* ── BACKEND ── */
 async function backendSave(pct){
-  if(!BACKEND_URL) return fallbackSave(pct);
+  if(!BACKEND_URL){ fallbackSave(pct); return; }
+  fallbackSave(pct);
   try{
-    await fetch(`${BACKEND_URL}?action=save&score=${pct}`);
-  }catch(e){ fallbackSave(pct); }
+    await fetch(`${BACKEND_URL}?action=save&score=${pct}`,{method:'GET',mode:'no-cors'});
+  }catch(e){}
 }
 async function backendStats(myPct){
   if(!BACKEND_URL) return fallbackStats(myPct);
   try{
-    const r=await fetch(`${BACKEND_URL}?action=stats`);
+    const r=await fetch(`${BACKEND_URL}?action=stats&cb=${Date.now()}`,{method:'GET',mode:'cors',redirect:'follow'});
     const d=await r.json();
     const scores=getAllLocalScores();
     const rank=scores.length?Math.round((scores.filter(x=>x<=myPct).length/scores.length)*100):50;
