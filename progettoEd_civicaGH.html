@@ -1,0 +1,1625 @@
+<!DOCTYPE html>
+<!--
+  ╔══════════════════════════════════════════════════════════════╗
+  ║         SONDAGGIO - QUANTO SEI AL SICURO ONLINE?            ║
+  ║  Un file HTML singolo: contiene struttura, stile e logica   ║
+  ╚══════════════════════════════════════════════════════════════╝
+
+  Un file HTML è diviso in 3 parti principali:
+  1. <head>   → impostazioni invisibili (font, stili, librerie)
+  2. <body>   → contenuto visibile della pagina
+  3. <script> → codice JavaScript che fa funzionare tutto
+-->
+
+<html lang="it">
+<head>
+  <!-- Dice al browser che il testo usa caratteri italiani/europei -->
+  <meta charset="UTF-8"/>
+
+  <!-- Rende il sito responsive: si adatta a schermi di ogni dimensione -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <!-- Il titolo che appare nella scheda del browser -->
+  <title>Quanto sei al sicuro online?</title>
+
+  <!--
+    Carica il font Inter da Google.
+    Inter è un font sans-serif moderno simile a San Francisco di Apple.
+    Usato per tutti i testi del sito.
+  -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+
+  <!--
+    Carica la libreria QRCode.js da un server esterno (CDN).
+    Questa libreria genera automaticamente il QR code di Kaspersky.
+    Senza questa riga il QR code non apparirebbe.
+  -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <!--
+  ╔══════════════════════════════════════════════════════════════╗
+  ║                          CSS / STILI                        ║
+  ║  Il CSS definisce COME appare ogni elemento della pagina:   ║
+  ║  colori, dimensioni, margini, animazioni ecc.               ║
+  ║  Ogni regola ha la forma:  .nome-classe { proprietà: valore }║
+  ╚══════════════════════════════════════════════════════════════╝
+  -->
+  <style>
+
+    /* Azzera margini e padding predefiniti del browser su TUTTI gli elementi.
+       box-sizing:border-box fa sì che padding e bordi siano inclusi
+       nella larghezza totale degli elementi (più facile da gestire). */
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+    /* Stile del corpo della pagina:
+       - font principale Inter
+       - sfondo blu notte scuro (#0a0f1e)
+       - testo grigio chiaro (#e8edf8)
+       - min-height:100vh = occupa almeno tutta l'altezza dello schermo
+       - display:flex + justify-content:center = centra il contenuto orizzontalmente */
+    body{font-family:'Inter',sans-serif;background:#0a0f1e;color:#e8edf8;min-height:100vh;display:flex;align-items:flex-start;justify-content:center}
+
+    /* Contenitore principale della pagina.
+       max-width:700px = non si allarga oltre 700px anche su schermi grandi.
+       padding = spazio interno su tutti i lati. */
+    .survey-wrap{width:100%;max-width:700px;min-height:100vh;padding:2.5rem 1.5rem 4rem;position:relative}
+
+    /* La griglia di sfondo decorativa (le linee verdi sottili).
+       position:fixed = rimane ferma anche quando si scrolla.
+       background-image con due gradienti crea una griglia.
+       pointer-events:none = non intercetta i click del mouse.
+       z-index:0 = sta sotto a tutto il resto. */
+    .grid-bg{position:fixed;inset:0;background-image:linear-gradient(rgba(0,200,150,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,150,.04) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+
+    /* La linea verde che scorre dall'alto verso il basso (effetto scanner).
+       animation:scan = usa l'animazione definita sotto con @keyframes.
+       4s linear infinite = dura 4 secondi, velocità costante, si ripete. */
+    .scan-line{position:fixed;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#00c896,transparent);animation:scan 4s linear infinite;opacity:.4;pointer-events:none;z-index:0}
+
+    /* Definisce l'animazione "scan": la linea parte da top:0% e arriva a top:100%
+       cioè scorre da cima a fondo della pagina. */
+    @keyframes scan{0%{top:0%}100%{top:100%}}
+
+    /* ── HEADER (la parte in cima con titolo e sottotitolo) ── */
+    .header{text-align:center;margin-bottom:2.5rem;position:relative;z-index:2}
+
+    /* La pillola verde "[indagine digitale]" sopra al titolo.
+       border-radius:20px = angoli arrotondati.
+       letter-spacing = spazio tra le lettere.
+       text-transform:uppercase = tutto maiuscolo. */
+    .badge-pill{display:inline-block;font-family:'Inter',sans-serif;font-size:11px;color:#00c896;border:1px solid #00c896;padding:4px 14px;border-radius:20px;margin-bottom:1rem;letter-spacing:2px;text-transform:uppercase}
+
+    /* Il titolo h1: clamp(26px, 5vw, 40px) significa
+       "minimo 26px, preferibilmente 5% della larghezza schermo, massimo 40px"
+       Così si adatta automaticamente a mobile e desktop. */
+    h1{font-size:clamp(26px,5vw,40px);font-weight:800;line-height:1.15;margin-bottom:.7rem;color:#fff}
+
+    /* La parola "online?" dentro h1 è verde */
+    h1 span{color:#00c896}
+
+    /* Il sottotitolo sotto al titolo principale */
+    .subtitle{font-size:15px;color:#7a8ba8;max-width:440px;margin:0 auto;line-height:1.65}
+
+    /* ── BARRA DI AVANZAMENTO (es. "Domanda 3 di 10") ── */
+    .progress-bar-wrap{max-width:560px;margin:0 auto 2rem;position:relative;z-index:2}
+
+    /* Riga con "Domanda X di 10" a sinistra e "30%" a destra */
+    .progress-meta{display:flex;justify-content:space-between;font-size:12px;font-family:'Inter',sans-serif;color:#4a5e7a;margin-bottom:6px}
+
+    /* Il binario grigio della barra di avanzamento */
+    .progress-track{height:4px;background:#1a2540;border-radius:2px;overflow:hidden}
+
+    /* Il riempimento verde che avanza.
+       transition:width = quando la larghezza cambia, lo fa con animazione fluida. */
+    .progress-fill{height:100%;background:#00c896;border-radius:2px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+
+    /* ── CARD DELLA DOMANDA (il riquadro con la domanda e le opzioni) ── */
+    .card{max-width:560px;margin:0 auto;background:#111827;border:1px solid #1e3a5f;border-radius:16px;padding:2rem;position:relative;z-index:2}
+
+    /* La linea verde decorativa in cima alla card.
+       ::before è un elemento CSS "fantasma" che non esiste nell'HTML
+       ma viene creato prima del contenuto della card. */
+    .card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:#00c896;border-radius:16px 16px 0 0}
+
+    /* Il numero della domanda ("DOMANDA 3 — PASSWORD") in piccolo verde */
+    .q-number{font-family:'Inter',sans-serif;font-size:11px;color:#00c896;letter-spacing:2px;text-transform:uppercase;margin-bottom:.75rem}
+
+    /* L'emoji grande (es. 🔑) sopra al testo della domanda */
+    .q-icon{font-size:30px;margin-bottom:1rem}
+
+    /* Il testo della domanda */
+    .q-text{font-size:18px;font-weight:600;line-height:1.45;margin-bottom:1.5rem;color:#e8edf8}
+
+    /* Il contenitore delle opzioni di risposta: colonna verticale con spazio tra le voci */
+    .options{display:flex;flex-direction:column;gap:10px}
+
+    /* Una singola opzione di risposta (il riquadro cliccabile).
+       cursor:pointer = il cursore diventa una mano quando ci passi sopra.
+       transition:all .2s = tutte le proprietà cambiano con animazione in 0.2 secondi. */
+    .opt{background:#0d1526;border:1px solid #1e3a5f;border-radius:10px;padding:.85rem 1.1rem;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all .2s;font-size:14px;color:#c0cee0;font-weight:500}
+
+    /* Quando il mouse è sopra all'opzione: bordo verde e sfondo leggermente più chiaro */
+    .opt:hover{border-color:#00c896;background:#0f2030;color:#fff}
+
+    /* Quando l'opzione è selezionata: bordo e testo verde, sfondo verde scurissimo */
+    .opt.selected{border-color:#00c896;background:#001f1a;color:#00c896}
+
+    /* La lettera A/B/C/D a sinistra di ogni opzione */
+    .opt-letter{font-family:'Inter',sans-serif;font-size:11px;color:#4a5e7a;min-width:20px;font-weight:700}
+
+    /* La lettera diventa verde quando l'opzione è selezionata */
+    .opt.selected .opt-letter{color:#00c896}
+
+    /* Animazione "flash" quando un'opzione viene selezionata */
+    .opt.flash{animation:optFlash .5s ease;}
+    @keyframes optFlash{0%{background:#001f1a;border-color:#00c896}50%{background:#003d30;border-color:#00e5ac}100%{background:#001f1a;border-color:#00c896}}
+
+    /* La riga con i pulsanti "Indietro" e "Avanti" */
+    .nav-row{display:flex;justify-content:space-between;align-items:center;margin-top:1.75rem}
+
+    /* Stile base per tutti i pulsanti */
+    .btn{font-family:'Inter',sans-serif;font-weight:700;font-size:14px;padding:10px 24px;border-radius:8px;border:none;cursor:pointer;transition:all .2s}
+
+    /* Pulsante "Indietro": trasparente con bordo */
+    .btn-back{background:transparent;border:1px solid #1e3a5f;color:#7a8ba8}
+    .btn-back:hover{border-color:#4a5e7a;color:#c0cee0}
+
+    /* Pulsante "Avanti": verde pieno */
+    .btn-next{background:#00c896;color:#001f1a}
+    .btn-next:hover{background:#00e5ac}
+
+    /* Pulsante "Avanti" disabilitato (grigio) quando non si è ancora risposto */
+    .btn-next:disabled{background:#1e3a5f;color:#4a5e7a;cursor:not-allowed}
+
+    /* ── GAUGE (il tachimetro animato nei risultati) ── */
+    .gauge-wrap{max-width:300px;margin:0 auto .5rem}
+    .gauge-svg{width:100%;display:block}
+
+    /* Il contenitore del numero percentuale e del livello sotto al gauge */
+    .gauge-center-label{text-align:center;margin-bottom:1.25rem}
+
+    /* Il numero grande (es. "72%") */
+    .gauge-pct-num{font-family:'Inter',sans-serif;font-size:38px;font-weight:700;line-height:1}
+
+    /* L'etichetta del livello (es. "UTENTE CONSAPEVOLE") */
+    .gauge-level-label{font-size:12px;font-weight:700;margin-top:6px;letter-spacing:2px;text-transform:uppercase}
+
+    /* ── PAGINA RISULTATI ── */
+
+    /* Contenitore esterno dei risultati */
+    .result-wrap{max-width:560px;margin:0 auto;position:relative;z-index:2}
+
+    /* Il riquadro principale con gauge, badge, radar ecc.
+       --level-color è una variabile CSS impostata dinamicamente da JavaScript
+       in base al punteggio (verde/azzurro/arancione/rosso). */
+    .result-card{background:#111827;border:1px solid #1e3a5f;border-radius:16px;padding:2rem;position:relative;margin-bottom:1.25rem}
+    .result-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:16px 16px 0 0;background:var(--level-color,#00c896)}
+
+    /* Il testo descrittivo breve sotto alla percentuale (es. "Hai buone basi...") */
+    .result-desc{font-size:14px;color:#7a8ba8;text-align:center;line-height:1.65;margin:0 auto 1.75rem;max-width:420px}
+
+    /* ── BADGE / ACHIEVEMENT ──
+       I badge sono i trofei sbloccabili (es. "Password Master", "2FA Pro").
+       Quelli guadagnati appaiono in verde, gli altri in grigio sbiadito. */
+
+    /* Etichetta di sezione piccola in verde (usata per "[ achievement ]", "[ grafico ]" ecc.) */
+    .section-label{font-family:'Inter',sans-serif;font-size:11px;color:#00c896;letter-spacing:2px;text-transform:uppercase;margin-bottom:.75rem}
+
+    /* Contenitore della sezione badge */
+    .badges-section{margin-bottom:1.25rem}
+
+    /* Griglia dei badge: si dispongono in riga e vanno a capo se non ci stanno */
+    .badges-grid{display:flex;flex-wrap:wrap;gap:10px}
+
+    /* Un singolo badge (non ancora guadagnato): grigio e sbiadito */
+    .badge-item{background:#0d1526;border:1px solid #1e3a5f;border-radius:10px;padding:.6rem .9rem;display:flex;align-items:center;gap:8px;font-size:13px;color:#4a5e7a;font-weight:600;transition:all .3s}
+
+    /* Badge guadagnato: bordo e testo verde */
+    .badge-item.earned{border-color:#00c896;background:#001f18;color:#00c896}
+
+    /* L'emoji del badge: grigia (opacity .3) se non guadagnato */
+    .badge-icon{font-size:18px;opacity:.3;transition:opacity .3s}
+
+    /* L'emoji diventa piena se il badge è guadagnato */
+    .badge-item.earned .badge-icon{opacity:1}
+
+    /* ── GRAFICO RADAR (la ragnatela) ──
+       È un SVG disegnato via JavaScript che mostra i punteggi
+       per categoria in forma di poligono. */
+    .radar-section{margin-bottom:1.25rem}
+    .radar-wrap{max-width:300px;margin:0 auto}
+    .radar-svg{width:100%;display:block}
+
+    /* ── ACCORDION (menu a tendina per il dettaglio categorie) ──
+       Funziona così: il body ha max-height:0 (nascosto).
+       Quando si clicca, JavaScript aggiunge la classe "open"
+       e il max-height diventa molto grande → l'animazione lo apre. */
+    .accordion{border:1px solid #1e3a5f;border-radius:10px;overflow:hidden;margin-bottom:1.25rem}
+
+    /* Il pulsante cliccabile che apre/chiude l'accordion */
+    .accordion-trigger{width:100%;background:#0d1526;border:none;cursor:pointer;padding:.9rem 1.1rem;display:flex;align-items:center;justify-content:space-between;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:#c0cee0;transition:background .2s}
+    .accordion-trigger:hover{background:#0f2030}
+    .accordion-trigger-left{display:flex;align-items:center;gap:10px}
+
+    /* La freccia ▼ che ruota quando l'accordion si apre.
+       È creata con CSS usando due bordi ruotati (senza immagini). */
+    .acc-chevron{display:inline-block;width:14px;height:14px;border-right:2px solid #4a5e7a;border-bottom:2px solid #4a5e7a;transform:rotate(45deg);transition:transform .35s cubic-bezier(.4,0,.2,1);margin-right:2px}
+
+    /* Quando l'accordion è aperto, la freccia ruota di 180° */
+    .accordion.open .acc-chevron{transform:rotate(-135deg)}
+
+    /* Il corpo dell'accordion: nascosto di default (max-height:0) */
+    .accordion-body{max-height:0;overflow:hidden;transition:max-height .6s cubic-bezier(.4,0,.2,1);background:#0a1020}
+
+    /* Quando è aperto: max-height grande per contenere tutto */
+    .accordion.open .accordion-body{max-height:4000px}
+
+    /* Contenuto interno dell'accordion */
+    .accordion-inner{padding:1rem 1.1rem;display:flex;flex-direction:column;gap:10px}
+
+    /* Una singola voce del dettaglio categorie (es. "Password - 60%") */
+    .breakdown-item{background:#0d1526;border:1px solid #1e3a5f;border-radius:8px;padding:.7rem .9rem}
+
+    /* Riga con nome categoria a sinistra e percentuale a destra */
+    .breakdown-top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;color:#c0cee0}
+    .breakdown-score-txt{font-family:'Inter',sans-serif;font-size:12px}
+
+    /* Il binario grigio della mini-barra di avanzamento */
+    .breakdown-bar-track{height:4px;background:#1a2540;border-radius:2px;overflow:hidden}
+
+    /* Il riempimento colorato della mini-barra (parte da 0 e si anima alla % corretta) */
+    .breakdown-bar-fill{height:100%;border-radius:2px;width:0;transition:width .8s cubic-bezier(.4,0,.2,1)}
+
+    /* ── RIQUADRO CONSIGLIO PERSONALIZZATO ── */
+    .tip-box{background:#001f1a;border:1px solid #00c896;border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.25rem}
+    .tip-label{font-size:11px;font-family:'Inter',sans-serif;color:#00c896;letter-spacing:2px;text-transform:uppercase;margin-bottom:.4rem}
+    .tip-text{font-size:13px;color:#a0c4b0;line-height:1.65}
+
+    /* ── PULSANTI AZIONE (Condividi / Ricomincia) ── */
+    /* flex-wrap:wrap = se non ci stanno in una riga, vanno a capo */
+    .action-row{display:flex;gap:10px;margin-bottom:1.25rem;flex-wrap:wrap}
+
+    /* Pulsante generico (bordo scuro, sfondo scuro) */
+    .action-btn{flex:1;min-width:130px;font-family:'Inter',sans-serif;font-weight:700;font-size:13px;padding:12px 10px;border-radius:10px;border:1px solid #1e3a5f;background:#0d1526;color:#c0cee0;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px}
+    .action-btn:hover{border-color:#00c896;background:#0f2030;color:#fff}
+
+    /* Pulsante primario (es. "Ricomincia"): verde pieno */
+    .action-btn.primary{background:#00c896;color:#001f1a;border-color:#00c896}
+    .action-btn.primary:hover{background:#00e5ac}
+
+    /* ── TOAST (il messaggio che appare in basso dopo "Condividi") ──
+       Parte nascosto (translateY(100px) = spostato sotto lo schermo).
+       Quando JS aggiunge la classe "show", scivola su (translateY(0)). */
+    .toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(100px);padding:12px 24px;border-radius:40px;z-index:999;transition:transform .4s cubic-bezier(.4,0,.2,1);pointer-events:none;font-family:'Inter',sans-serif;font-weight:700;font-size:13px;white-space:nowrap}
+    .toast.success{background:#00c896;color:#001f1a}
+    .toast.show{transform:translateX(-50%) translateY(0)}
+
+    /* ── RIQUADRO QR CODE KASPERSKY ── */
+    .kaspersky-box{background:#111827;border:1px solid #1e3a5f;border-radius:16px;padding:1.75rem;position:relative;z-index:2;text-align:center;margin-bottom:1.25rem}
+
+    /* Linea rossa in cima al riquadro Kaspersky */
+    .kaspersky-box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:16px 16px 0 0;background:linear-gradient(90deg,#cc0000,#ff4444,#cc0000)}
+
+    /* Riga con i puntini rossi lampeggianti e il titolo */
+    .kaspersky-header{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:.4rem}
+
+    /* Il puntino rosso che pulsa (simula un indicatore "live") */
+    .kaspersky-dot{width:8px;height:8px;border-radius:50%;background:#e24b4a;animation:pulse-red 1.5s ease-in-out infinite}
+
+    /* Animazione del puntino: diventa trasparente e si ingrandisce a metà ciclo */
+    @keyframes pulse-red{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.4)}}
+
+    .kaspersky-title{font-size:14px;font-weight:700;color:#e8edf8;letter-spacing:1px;text-transform:uppercase}
+    .kaspersky-sub{font-size:12px;color:#7a8ba8;margin-bottom:1.25rem;line-height:1.5}
+
+    /* Il link cliccabile che contiene il QR code */
+    .qr-link{display:inline-block;cursor:pointer;text-decoration:none}
+
+    /* Il contenitore bianco del QR code.
+       Quando ci passi sopra si ingrandisce leggermente e appare un alone rosso. */
+    .qr-container{background:#fff;border-radius:12px;padding:12px;display:inline-block;transition:transform .2s,box-shadow .2s}
+    .qr-link:hover .qr-container{transform:scale(1.04);box-shadow:0 0 24px 4px rgba(226,75,74,.35)}
+
+    .qr-caption{margin-top:.9rem;font-size:12px;font-family:'Inter',sans-serif;color:#4a5e7a}
+    .qr-caption span{color:#e24b4a}
+    .kaspersky-desc{margin-top:1rem;font-size:12px;color:#4a5e7a;line-height:1.6;border-top:1px solid #1e3a5f;padding-top:1rem}
+
+    /* ── SEZIONE ATTACCHI INFORMATICI ──
+       È una grande sezione a tendina con 10 card, una per attacco.
+       Ogni card si apre a sua volta mostrando descrizione e precauzioni. */
+
+    /* Contenitore esterno della sezione */
+    .attacks-section{max-width:560px;margin:0 auto 1.25rem;position:relative;z-index:2}
+
+    /* L'intestazione cliccabile "Attacchi informatici più comuni" */
+    .attacks-header-box{background:#111827;border:1px solid #1e3a5f;border-radius:16px;padding:1.5rem 2rem;position:relative;cursor:pointer;transition:border-color .2s}
+    .attacks-header-box:hover{border-color:#e24b4a}
+
+    /* Linea rossa-arancione in cima alla sezione attacchi */
+    .attacks-header-box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:16px 16px 0 0;background:linear-gradient(90deg,#e24b4a,#f5a623)}
+
+    .attacks-header-inner{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .attacks-header-left{display:flex;align-items:center;gap:14px}
+    .attacks-header-icon{font-size:28px}
+    .attacks-header-title{font-size:16px;font-weight:800;color:#fff}
+    .attacks-header-sub{font-size:12px;color:#7a8ba8;margin-top:2px}
+
+    /* La freccia ▼ della sezione attacchi (stessa tecnica dell'accordion) */
+    .attacks-chevron{display:inline-block;width:14px;height:14px;border-right:2px solid #4a5e7a;border-bottom:2px solid #4a5e7a;transform:rotate(45deg);transition:transform .35s cubic-bezier(.4,0,.2,1);flex-shrink:0}
+    .attacks-section.open .attacks-chevron{transform:rotate(-135deg)}
+
+    /* Il corpo nascosto della sezione attacchi */
+    .attacks-body{max-height:0;overflow:hidden;transition:max-height .6s cubic-bezier(.4,0,.2,1)}
+    .attacks-section.open .attacks-body{max-height:9999px}
+    .attacks-body-inner{padding-top:1rem;display:flex;flex-direction:column;gap:1rem}
+
+    /* ── FILTRI DI DIFFICOLTÀ ("Tutti / Pericolo alto / Pericolo medio") ── */
+    .diff-filter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.5rem}
+    .diff-btn{font-family:'Inter',sans-serif;font-size:12px;font-weight:700;padding:6px 14px;border-radius:20px;border:1px solid #1e3a5f;background:#0d1526;color:#7a8ba8;cursor:pointer;transition:all .2s}
+    .diff-btn:hover{border-color:#4a5e7a;color:#c0cee0}
+    .diff-btn.active{color:#001f1a}
+
+    /* Colori diversi per ogni filtro attivo */
+    .diff-btn[data-diff="all"].active{background:#4a5e7a;border-color:#4a5e7a}
+    .diff-btn[data-diff="alto"].active{background:#e24b4a;border-color:#e24b4a}
+    .diff-btn[data-diff="medio"].active{background:#f5a623;border-color:#f5a623}
+
+    /* ── CARD DI UN SINGOLO ATTACCO ── */
+    .attack-card{background:#111827;border:1px solid #1e3a5f;border-radius:12px;overflow:hidden;transition:border-color .2s}
+    .attack-card:hover{border-color:#2a4a7a}
+
+    /* L'intestazione cliccabile della card (emoji + nome + badge pericolo) */
+    .attack-card-header{padding:1rem 1.25rem;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .attack-card-left{display:flex;align-items:center;gap:12px}
+    .attack-emoji{font-size:24px;flex-shrink:0}
+    .attack-name{font-size:15px;font-weight:700;color:#e8edf8}
+    .attack-tagline{font-size:12px;color:#7a8ba8;margin-top:2px}
+    .attack-card-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+
+    /* Il badge colorato "🔴 Alto / 🟡 Medio" */
+    .danger-badge{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:1px}
+    .danger-alto{background:rgba(226,75,74,.15);color:#e24b4a;border:1px solid rgba(226,75,74,.3)}
+    .danger-medio{background:rgba(245,166,35,.15);color:#f5a623;border:1px solid rgba(245,166,35,.3)}
+    .danger-basso{background:rgba(0,200,150,.15);color:#00c896;border:1px solid rgba(0,200,150,.3)}
+
+    /* La freccia della singola card attacco */
+    .attack-chevron{width:12px;height:12px;border-right:2px solid #4a5e7a;border-bottom:2px solid #4a5e7a;transform:rotate(45deg);transition:transform .3s;flex-shrink:0}
+    .attack-card.open .attack-chevron{transform:rotate(-135deg)}
+
+    /* Il corpo nascosto della card attacco */
+    .attack-body{max-height:0;overflow:hidden;transition:max-height .45s cubic-bezier(.4,0,.2,1)}
+    .attack-card.open .attack-body{max-height:800px}
+    .attack-body-inner{padding:0 1.25rem 1.25rem;border-top:1px solid #1e3a5f}
+
+    /* La descrizione testuale dell'attacco */
+    .attack-desc{font-size:13px;color:#7a8ba8;line-height:1.65;margin:1rem 0}
+
+    /* ── TAB "Facile / Medio / Avanzato" per le precauzioni ──
+       Cliccando un tab si mostra la lista precauzioni del livello scelto. */
+    .prec-tabs{display:flex;gap:6px;margin-bottom:.85rem;flex-wrap:wrap}
+    .prec-tab{font-family:'Inter',sans-serif;font-size:11px;font-weight:700;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;transition:all .2s;opacity:.5}
+    .prec-tab:hover{opacity:.8}
+    .prec-tab.active{opacity:1}
+
+    /* Colori dei tab per livello */
+    .prec-tab.facile{background:rgba(0,200,150,.2);color:#00c896}
+    .prec-tab.facile.active{background:#00c896;color:#001f1a}
+    .prec-tab.medio{background:rgba(245,166,35,.2);color:#f5a623}
+    .prec-tab.medio.active{background:#f5a623;color:#001f1a}
+    .prec-tab.avanzato{background:rgba(226,75,74,.2);color:#e24b4a}
+    .prec-tab.avanzato.active{background:#e24b4a;color:#fff}
+
+    /* Lista delle precauzioni: nascosta di default, visibile solo se ha la classe "visible" */
+    .prec-list{display:none;flex-direction:column;gap:7px}
+    .prec-list.visible{display:flex}
+
+    /* Una singola precauzione con il puntino colorato a sinistra */
+    .prec-item{display:flex;align-items:flex-start;gap:10px;background:#0d1526;border-radius:8px;padding:.65rem .9rem;font-size:13px;color:#c0cee0;line-height:1.5}
+    .prec-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:5px}
+
+    /* Colori del puntino in base al livello */
+    .facile .prec-dot{background:#00c896}
+    .medio .prec-dot{background:#f5a623}
+    .avanzato .prec-dot{background:#e24b4a}
+
+    /* ── RESPONSIVE MOBILE ──
+       Quando lo schermo è largo meno di 480px (smartphone):
+       riduce i padding e mette i pulsanti in colonna */
+    /* ── VIDEO BOX ── */
+    .video-box{background:#111827;border:1px solid #1e3a5f;border-radius:16px;padding:1.5rem;position:relative;z-index:2;margin-bottom:1.25rem}
+    .video-box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:16px 16px 0 0;background:linear-gradient(90deg,#00c896,#4ac8ff)}
+    .video-label{font-size:10px;font-weight:600;color:#00c896;letter-spacing:2px;text-transform:uppercase;margin-bottom:1rem}
+    .video-thumb-link{position:relative;display:block;border-radius:10px;overflow:hidden}
+    .video-thumb-link:hover .video-play-btn{background:rgba(255,0,0,1);transform:translate(-50%,-50%) scale(1.1)}
+    .video-play-btn{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:64px;height:44px;background:rgba(200,0,0,0.9);border-radius:10px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+    .video-caption{font-size:12px;color:#4a5e7a;margin-top:.75rem;text-align:center}
+
+    @media(max-width:480px){
+      .survey-wrap{padding:1.5rem 1rem 3rem}
+      .card{padding:1.5rem 1.2rem}
+      .q-text{font-size:16px}
+      .action-row{flex-direction:column}
+      .attacks-header-box{padding:1.25rem}
+    }
+  </style>
+</head>
+
+<!--
+╔══════════════════════════════════════════════════════════════╗
+║                         BODY / STRUTTURA                    ║
+║  Tutto ciò che è visibile nella pagina va qui dentro.       ║
+║  La maggior parte del contenuto (domande, risultati) viene  ║
+║  generata dinamicamente da JavaScript e inserita in         ║
+║  <main id="question-area">.                                 ║
+╚══════════════════════════════════════════════════════════════╝
+-->
+<body>
+
+  <!-- Contenitore principale centrato -->
+  <div class="survey-wrap">
+
+    <!-- Sfondo decorativo a griglia (solo estetico) -->
+    <div class="grid-bg"></div>
+
+    <!-- Linea verde animata che scorre (effetto scanner) -->
+    <div class="scan-line"></div>
+
+    <!-- Intestazione della pagina: badge + titolo + sottotitolo -->
+    <header class="header">
+      <div class="badge-pill">[ indagine digitale ]</div>
+      <h1>Quanto sei al sicuro<br><span>online?</span></h1>
+      <p class="subtitle">10 domande sulle tue abitudini digitali per valutare il tuo livello di protezione dagli hacker.</p>
+    </header>
+
+    <!-- Barra di avanzamento (es. "Domanda 3 di 10 — 30%")
+         Viene aggiornata da JavaScript a ogni cambio di domanda. -->
+    <div class="progress-bar-wrap" id="progress-section">
+      <div class="progress-meta">
+        <span id="prog-label">Domanda 1 di 10</span>
+        <span id="prog-pct">10%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="prog-fill" style="width:10%"></div>
+      </div>
+    </div>
+
+    <!--
+      Questo è il contenitore principale dove JavaScript inserisce:
+      - Le domande del sondaggio (durante il quiz)
+      - I risultati completi (alla fine)
+      È vuoto all'inizio: viene riempito da renderQuestion() e showResults().
+    -->
+    <main id="question-area"></main>
+
+  </div><!-- fine .survey-wrap -->
+
+  <!--
+    Il "toast" è il messaggio verde che appare in basso quando clicchi "Condividi".
+    Normalmente è invisibile (sotto lo schermo).
+    JavaScript aggiunge la classe "show" per farlo apparire, poi la rimuove dopo 3 secondi.
+  -->
+  <div class="toast success" id="toast"></div>
+
+
+<!--
+╔══════════════════════════════════════════════════════════════╗
+║                    JAVASCRIPT / LOGICA                      ║
+║  Qui c'è tutta la logica del sondaggio:                     ║
+║  - I dati (domande, attacchi, badge)                        ║
+║  - Le funzioni che aggiornano la pagina                     ║
+║  - I calcoli del punteggio                                  ║
+║  - Le animazioni (gauge, barre, radar)                      ║
+╚══════════════════════════════════════════════════════════════╝
+-->
+<script>
+
+/* ═══════════════════════════════════════════════════════════════
+   DATI: ATTACCHI INFORMATICI
+   Ogni oggetto rappresenta un tipo di attacco e contiene:
+   - id: identificatore univoco (usato per trovarlo nel DOM)
+   - emoji, name, danger: per la visualizzazione
+   - tagline: frase breve descrittiva
+   - desc: descrizione estesa
+   - precauzioni: oggetto con 3 livelli (facile/medio/avanzato),
+     ognuno con un array di consigli
+═══════════════════════════════════════════════════════════════ */
+const attacks = [
+  {
+    id:'phishing', emoji:'🎣', name:'Phishing', danger:'alto',
+    tagline:'Email e messaggi falsi per rubare le tue credenziali',
+    desc:'Il phishing è uno degli attacchi più diffusi al mondo. I criminali inviano email o messaggi che sembrano provenire da banche, corrieri o piattaforme famose per indurti a cliccare su link falsi e inserire le tue credenziali.',
+    precauzioni:{
+      facile:[
+        'Non cliccare mai su link in email che ti chiedono di "verificare il tuo account"',
+        'Controlla sempre il mittente: un indirizzo come "support@paypal-secure.xyz" è falso',
+        'Se hai dubbi, vai direttamente sul sito ufficiale digitando l\'indirizzo nel browser',
+        'Non aprire allegati inattesi, anche se provengono da contatti conosciuti',
+      ],
+      medio:[
+        'Attiva i filtri antispam avanzati nel tuo client di posta',
+        'Usa un\'estensione browser che avvisa sui siti di phishing noti (es. uBlock Origin)',
+        'Verifica il certificato SSL del sito (lucchetto) prima di inserire dati',
+        'Segnala le email sospette al tuo provider come phishing/spam',
+      ],
+      avanzato:[
+        'Abilita DMARC, DKIM e SPF sul tuo dominio aziendale per proteggere il brand',
+        'Usa un\'email con alias separati per ogni servizio: compromesso uno, gli altri sono al sicuro',
+        'Configura avvisi di login su tutti gli account importanti',
+        'Impara a leggere gli header delle email per identificare spoofing',
+      ]
+    }
+  },
+  {
+    id:'ransomware', emoji:'🔒', name:'Ransomware', danger:'alto',
+    tagline:'Virus che cifra i tuoi file e chiede un riscatto',
+    desc:'Il ransomware è un malware che, una volta installato, cifra tutti i file del dispositivo rendendoli inaccessibili. I criminali chiedono poi un riscatto (spesso in criptovaluta) per fornire la chiave di decifratura.',
+    precauzioni:{
+      facile:[
+        'Non scaricare mai software da siti non ufficiali o da email sconosciute',
+        'Fai backup regolari su un disco esterno disconnesso dalla rete',
+        'Tieni aggiornato il sistema operativo: le patch correggono le vulnerabilità sfruttate',
+        'Non aprire file .exe, .bat o .zip ricevuti via email da mittenti sconosciuti',
+      ],
+      medio:[
+        'Usa il principio del minimo privilegio: non lavorare sempre come amministratore',
+        'Attiva il Controlled Folder Access di Windows per proteggere le cartelle importanti',
+        'Esegui backup 3-2-1: 3 copie, 2 supporti diversi, 1 fuori sede o cloud',
+        'Installa un antivirus con protezione comportamentale in tempo reale',
+      ],
+      avanzato:[
+        'Segmenta la rete: isola i dispositivi critici dal resto della LAN',
+        'Monitora i processi anomali con strumenti come Sysmon o EDR aziendali',
+        'Testa periodicamente il ripristino dei backup per verificarne l\'integrità',
+        'Disabilita le macro nei documenti Office se non strettamente necessarie',
+      ]
+    }
+  },
+  {
+    id:'bruteforce', emoji:'🔨', name:'Brute Force', danger:'medio',
+    tagline:'Tentativi automatici di indovinare la tua password',
+    desc:'Gli attacchi brute force utilizzano software automatici che provano milioni di combinazioni di password al secondo. Account con password deboli o comuni vengono compromessi in pochi minuti.',
+    precauzioni:{
+      facile:[
+        'Usa password di almeno 12 caratteri con lettere, numeri e simboli',
+        'Non usare mai date di nascita, nomi di persone care o parole di dizionario',
+        'Usa una password diversa per ogni account: un password manager ti aiuta',
+        'Attiva l\'autenticazione a due fattori (2FA) ovunque sia disponibile',
+      ],
+      medio:[
+        'Usa un password manager (Bitwarden, 1Password) per generare password casuali',
+        'Verifica se le tue credenziali sono state violate su haveibeenpwned.com',
+        'Attiva il blocco automatico dopo N tentativi falliti dove possibile',
+        'Preferisci passphrase lunghe: "Cavallo-Batterio-Forcella-Corretto" è più sicuro di "P@ss1"',
+      ],
+      avanzato:[
+        'Implementa rate limiting e CAPTCHA sui form di login delle tue applicazioni',
+        'Usa chiavi SSH invece di password per l\'accesso ai server',
+        'Configura fail2ban o strumenti simili per bloccare IP dopo tentativi ripetuti',
+        'Adotta autenticazione passwordless (FIDO2/WebAuthn) ove possibile',
+      ]
+    }
+  },
+  {
+    id:'mitm', emoji:'🕵️', name:'Man in the Middle', danger:'alto',
+    tagline:'Intercettazione della comunicazione tra te e il server',
+    desc:'In un attacco MITM l\'hacker si posiziona "in mezzo" tra te e il sito/servizio che stai usando, intercettando e potenzialmente modificando i dati che si scambiano. Tipico su reti Wi-Fi pubbliche non protette.',
+    precauzioni:{
+      facile:[
+        'Non usare Wi-Fi pubblici per accedere a banca, email o account importanti',
+        'Verifica sempre che i siti usino HTTPS (lucchetto nella barra del browser)',
+        'Disconnettiti dalle reti Wi-Fi quando non le usi',
+        'Diffida delle reti senza password o con nomi generici come "Free WiFi"',
+      ],
+      medio:[
+        'Usa una VPN affidabile quando sei su reti pubbliche o sconosciute',
+        'Attiva HTTPS Everywhere o usa browser che forzano HTTPS di default',
+        'Controlla i certificati SSL: il nome del sito deve corrispondere esattamente',
+        'Disabilita la connessione automatica alle reti Wi-Fi salvate',
+      ],
+      avanzato:[
+        'Usa certificate pinning nelle tue applicazioni mobile per prevenire SSL stripping',
+        'Monitora il traffico di rete con Wireshark per identificare anomalie',
+        'Implementa HSTS (HTTP Strict Transport Security) sui tuoi siti web',
+        'Usa DNS over HTTPS (DoH) o DNS over TLS per cifrare le query DNS',
+      ]
+    }
+  },
+  {
+    id:'socialeng', emoji:'🎭', name:'Social Engineering', danger:'alto',
+    tagline:'Manipolazione psicologica per ottenere informazioni riservate',
+    desc:'Il social engineering sfrutta la psicologia umana invece che le vulnerabilità tecniche. L\'attaccante si finge un tecnico, un collega o un\'autorità per convincerti a rivelare password, accessi o dati sensibili.',
+    precauzioni:{
+      facile:[
+        'Nessuna azienda seria ti chiederà mai la password via telefono o email',
+        'Verifica sempre l\'identità di chi chiama prima di fornire qualsiasi dato',
+        'Non condividere informazioni aziendali sensibili sui social network',
+        'Se qualcosa ti sembra urgente e insolito, fermati e verifica prima di agire',
+      ],
+      medio:[
+        'Forma regolarmente te e il tuo team sul riconoscimento di queste tecniche',
+        'Implementa procedure di verifica per richieste sensibili (es. bonifici, accessi)',
+        'Limita le informazioni pubbliche su di te: LinkedIn, social e siti aziendali',
+        'Usa una parola d\'ordine interna per verificare le identità telefoniche',
+      ],
+      avanzato:[
+        'Conduci simulazioni di phishing e social engineering periodiche nel team',
+        'Implementa politiche zero-trust: verifica sempre, non fidarti mai implicitamente',
+        'Classifica i dati aziendali e definisci chi può accedere a cosa',
+        'Registra e analizza le richieste anomale per individuare pattern di attacco',
+      ]
+    }
+  },
+  {
+    id:'malware', emoji:'🦠', name:'Malware & Spyware', danger:'alto',
+    tagline:'Software malevolo che spia o danneggia il tuo dispositivo',
+    desc:'Il malware comprende virus, trojan, spyware e adware. Può registrare tutto ciò che scrivi (keylogger), rubare file, attivare la webcam o trasformare il tuo PC in uno zombie per attacchi di massa.',
+    precauzioni:{
+      facile:[
+        'Scarica software solo da fonti ufficiali (App Store, siti ufficiali)',
+        'Non installare crack o software pirata: spesso contengono malware',
+        'Mantieni aggiornati sistema operativo, browser e tutte le app',
+        'Scansiona regolarmente il dispositivo con un antivirus aggiornato',
+      ],
+      medio:[
+        'Usa un sandbox per aprire file sospetti senza rischiare il sistema principale',
+        'Abilita la protezione in tempo reale e le scansioni programmate',
+        'Monitora i processi in esecuzione e gli avvii automatici periodicamente',
+        'Usa un account utente standard (non admin) per le attività quotidiane',
+      ],
+      avanzato:[
+        'Implementa application whitelisting: esegui solo software esplicitamente autorizzato',
+        'Usa strumenti di analisi comportamentale (EDR) per rilevare minacce zero-day',
+        'Configura sandbox aziendali per l\'apertura automatica degli allegati email',
+        'Analizza il traffico DNS per individuare comunicazioni verso server C2',
+      ]
+    }
+  },
+  {
+    id:'sqli', emoji:'💉', name:'SQL Injection', danger:'medio',
+    tagline:'Manipolazione dei database tramite input malevolo',
+    desc:'L\'SQL injection avviene quando un attaccante inserisce codice SQL malevolo nei campi di un sito web per accedere o manipolare il database sottostante, potenzialmente rubando tutti i dati.',
+    precauzioni:{
+      facile:[
+        'Come utente, usa siti con HTTPS e mantieni il browser aggiornato',
+        'Non salvare password nei browser su dispositivi condivisi',
+        'Se un sito ti sembra strano dopo il login, cambia subito la password',
+        'Usa password uniche: se un sito viene violato, gli altri account rimangono sicuri',
+      ],
+      medio:[
+        'Come sviluppatore, usa sempre query parametrizzate (prepared statements)',
+        'Valida e sanitizza tutti gli input utente lato server',
+        'Limita i privilegi dell\'utente database: non usare root per le app web',
+        'Usa un WAF (Web Application Firewall) davanti alle tue applicazioni',
+      ],
+      avanzato:[
+        'Esegui penetration testing periodici sulle tue applicazioni web',
+        'Implementa input validation con whitelist (accetta solo ciò che è atteso)',
+        'Usa ORM moderni che gestiscono automaticamente l\'escaping degli input',
+        'Monitora le query SQL anomale con sistemi di Database Activity Monitoring',
+      ]
+    }
+  },
+  {
+    id:'ddos', emoji:'🌊', name:'DDoS', danger:'medio',
+    tagline:'Sovraccarico di richieste per mettere offline un servizio',
+    desc:'Un attacco DDoS inonda un server di milioni di richieste simultanee da dispositivi distribuiti in tutto il mondo, fino a mandarlo in crash e renderlo irraggiungibile agli utenti legittimi.',
+    precauzioni:{
+      facile:[
+        'Come utente, non puoi prevenirlo: è un problema dei server che usi',
+        'Assicurati che il tuo dispositivo non sia infettato e usato per attacchi DDoS',
+        'Usa servizi online con infrastrutture solide e piani di continuità',
+        'Segnala anomalie ai servizi che usi: potrebbe essere un attacco in corso',
+      ],
+      medio:[
+        'Usa servizi con protezione DDoS integrata (Cloudflare, AWS Shield)',
+        'Imposta rate limiting sulle API e sui form del tuo sito',
+        'Monitora il traffico di rete per rilevare picchi anomali in tempo reale',
+        'Configura firewall per bloccare IP sospetti automaticamente',
+      ],
+      avanzato:[
+        'Implementa anycast routing per distribuire il traffico su più datacenter',
+        'Usa CDN globali per assorbire il traffico malevolo prima che raggiunga i server',
+        'Predisponi un piano di incident response specifico per attacchi DDoS',
+        'Testa la resilienza dell\'infrastruttura con stress test programmati',
+      ]
+    }
+  },
+  {
+    id:'zerodayexploit', emoji:'⚡', name:'Zero-Day Exploit', danger:'alto',
+    tagline:'Attacco che sfrutta vulnerabilità sconosciute al produttore',
+    desc:'Uno zero-day è una vulnerabilità software non ancora nota al produttore, quindi senza patch disponibile. Gli hacker la sfruttano prima che venga scoperta e corretta.',
+    precauzioni:{
+      facile:[
+        'Aggiorna sempre e subito software, browser e sistema operativo',
+        'Usa browser moderni: Chrome, Firefox e Edge hanno sandbox di sicurezza avanzate',
+        'Disabilita plugin obsoleti come Flash o Java se non strettamente necessari',
+        'Riduci la superficie di attacco: disinstalla software che non usi',
+      ],
+      medio:[
+        'Abilita gli aggiornamenti automatici per tutti i software critici',
+        'Segui i bollettini di sicurezza dei vendor (Microsoft, Apple, Google)',
+        'Usa software di riconosciute aziende con programmi di bug bounty attivi',
+        'Implementa il principio del minimo privilegio per limitare i danni in caso di exploit',
+      ],
+      avanzato:[
+        'Adotta soluzioni EDR con rilevamento comportamentale per identificare exploit sconosciuti',
+        'Implementa exploit mitigation: DEP, ASLR, Control Flow Guard',
+        'Usa browser hardened con profili separati e sandbox rinforzate',
+        'Partecipa a programmi di threat intelligence per ricevere alert early warning',
+      ]
+    }
+  },
+  {
+    id:'identitytheft', emoji:'👤', name:'Furto di Identità', danger:'alto',
+    tagline:'Uso fraudolento dei tuoi dati personali',
+    desc:'Il furto di identità avviene quando qualcuno si appropria dei tuoi dati personali per commettere frodi, aprire conti bancari o contrarre debiti a tuo nome.',
+    precauzioni:{
+      facile:[
+        'Non condividere mai documenti d\'identità via chat o email non sicure',
+        'Monitora periodicamente i tuoi estratti conto per movimenti sospetti',
+        'Non inserire dati della carta su siti senza HTTPS o che sembrano non ufficiali',
+        'Distruggi fisicamente documenti con dati personali prima di buttarli',
+      ],
+      medio:[
+        'Attiva le notifiche SMS/email per ogni transazione della tua banca',
+        'Usa carte virtuali monouso per gli acquisti online',
+        'Controlla periodicamente la tua posizione creditizia su CRIF o Experian',
+        'Usa servizi di monitoraggio del dark web per sapere se i tuoi dati sono stati esposti',
+      ],
+      avanzato:[
+        'Congela il tuo credito presso le agenzie di rating per prevenire apertura di conti a tuo nome',
+        'Usa indirizzi email alias per ogni servizio',
+        'Implementa autenticazione forte su tutti i servizi finanziari',
+        'Verifica regolarmente quali app hanno accesso ai tuoi account Google/Apple/Facebook',
+      ]
+    }
+  }
+];
+
+/* ═══════════════════════════════════════════════════════════════
+   DATI: DOMANDE DEL SONDAGGIO
+   Ogni oggetto rappresenta una domanda e contiene:
+   - icon: emoji decorativa
+   - text: il testo della domanda
+   - category: la categoria di sicurezza (usata per il dettaglio)
+   - options: array di 4 risposte, ognuna con testo e punteggio (0-10)
+═══════════════════════════════════════════════════════════════ */
+const questions=[
+  {icon:"🔑",text:"Come gestisci le tue password?",category:"Password",
+   options:[{text:"Uso un password manager con password uniche per ogni sito",score:10},{text:"Ho password diverse ma le tengo a memoria o su un file",score:6},{text:"Uso la stessa password o varianti simili su più siti",score:2},{text:"Uso sempre la stessa password ovunque",score:0}]},
+  {icon:"📱",text:"Usi l'autenticazione a due fattori (2FA)?",category:"Autenticazione",
+   options:[{text:"Sì, su tutti gli account importanti con app authenticator",score:10},{text:"Sì, ma solo con SMS su alcuni account",score:6},{text:"L'ho impostata solo su qualche account",score:3},{text:"No, non la uso mai",score:0}]},
+  {icon:"📡",text:"Come ti comporti con le reti Wi-Fi pubbliche?",category:"Reti",
+   options:[{text:"Non mi connetto mai o uso sempre una VPN",score:10},{text:"Mi connetto ma evito operazioni sensibili",score:5},{text:"Mi connetto e uso i servizi normalmente",score:2},{text:"Mi connetto a qualsiasi rete senza pensarci",score:0}]},
+  {icon:"📧",text:"Come reagisci alle email sospette?",category:"Phishing",
+   options:[{text:"Controllo mittente, link e segnalo come phishing se sospetto",score:10},{text:"Le ignoro e le cancello senza aprire allegati",score:7},{text:"Le apro ma cerco di non cliccare link strani",score:3},{text:"Clicco se sembra urgente o interessante",score:0}]},
+  {icon:"🔄",text:"Con quale frequenza aggiorni i tuoi dispositivi?",category:"Aggiornamenti",
+   options:[{text:"Aggiorno subito non appena escono gli aggiornamenti",score:10},{text:"Aggiorno periodicamente, qualche volta a settimana",score:7},{text:"Aggiorno raramente, solo quando necessario",score:3},{text:"Non aggiorno quasi mai",score:0}]},
+  {icon:"🛡️",text:"Hai un antivirus o software di sicurezza attivo?",category:"Protezione",
+   options:[{text:"Sì, con protezione in tempo reale e aggiornato",score:10},{text:"Sì, ma lo aggiorno raramente",score:5},{text:"Solo quello integrato nel sistema operativo",score:4},{text:"No, non ho nessun antivirus",score:0}]},
+  {icon:"☁️",text:"Come gestisci i backup dei tuoi dati importanti?",category:"Backup",
+   options:[{text:"Backup automatici su cloud + copia offline regolare",score:10},{text:"Backup occasionale su cloud o disco esterno",score:6},{text:"Backup molto raro, solo per i file più importanti",score:2},{text:"Non faccio mai backup",score:0}]},
+  {icon:"🔒",text:"Controlli le autorizzazioni delle app che installi?",category:"Privacy",
+   options:[{text:"Sì, leggo sempre e nego le autorizzazioni non necessarie",score:10},{text:"A volte le controllo per le app più importanti",score:6},{text:"Di solito accetto tutto per comodità",score:2},{text:"Non sapevo si potessero controllare",score:0}]},
+  {icon:"🌐",text:"Come verifichi se un sito è sicuro prima di inserire dati?",category:"Navigazione",
+   options:[{text:"Controllo HTTPS, certificato e URL con attenzione",score:10},{text:"Guardo se c'è il lucchetto nella barra indirizzi",score:6},{text:"Se il sito sembra professionale lo uso",score:2},{text:"Non ci faccio caso",score:0}]},
+  {icon:"📲",text:"Cosa fai quando ricevi un link da un amico sui social?",category:"Social",
+   options:[{text:"Verifico prima l'URL e la fonte, poi decido se aprire",score:10},{text:"Lo apro ma sono cauto se chiede dati personali",score:6},{text:"Di solito lo apro senza troppi controlli",score:2},{text:"Clicco sempre, mi fido dei miei contatti",score:0}]}
+];
+
+/* Mappa emoji per ogni categoria (usata nel radar e nei dettagli) */
+const catIcons={Password:"🔑",Autenticazione:"📱",Reti:"📡",Phishing:"📧",Aggiornamenti:"🔄",Protezione:"🛡️",Backup:"☁️",Privacy:"🔒",Navigazione:"🌐",Social:"📲"};
+
+/*
+  Oggetto che tiene traccia del punteggio per ogni categoria.
+  Viene inizializzato con score:0 per ogni categoria e aggiornato
+  man mano che l'utente risponde.
+  Esempio: { Password: {max:10, score:6}, Reti: {max:10, score:0}, ... }
+*/
+const categories={};
+questions.forEach(q=>{categories[q.category]={max:10,score:0}});
+
+/* Indice della domanda corrente (parte da 0 = prima domanda) */
+let current=0;
+
+/*
+  Array che memorizza le risposte date dall'utente.
+  Ogni elemento è l'indice dell'opzione scelta (0,1,2,3) oppure null se non risposto.
+  Esempio: [0, 2, null, 1, ...] → prima domanda risposta A, seconda risposta C, terza non risposta...
+*/
+let answers=new Array(questions.length).fill(null);
+
+
+/* ═══════════════════════════════════════════════════════════════
+   FUNZIONE: getLevel(pct)
+   Riceve il punteggio percentuale (0-100) e restituisce un oggetto
+   con il label del livello, il colore e la descrizione breve.
+═══════════════════════════════════════════════════════════════ */
+function getLevel(pct){
+  if(pct>=85)return{label:"Esperto della sicurezza",color:"#00c896",desc:"Ottimo livello di sicurezza. Continua così!"};
+  if(pct>=60)return{label:"Utente consapevole",color:"#4ac8ff",desc:"Hai buone basi, ma ci sono aree da migliorare."};
+  if(pct>=35)return{label:"A rischio moderato",color:"#f5a623",desc:"Ci sono vulnerabilità importanti da correggere."};
+  return{label:"Vulnerabile",color:"#e24b4a",desc:"Il tuo livello di sicurezza è molto basso."};
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   FUNZIONE: renderQuestion()
+   Disegna la domanda corrente nella pagina.
+   Viene chiamata ogni volta che si va alla domanda successiva
+   o precedente, e ogni volta che si seleziona una risposta.
+═══════════════════════════════════════════════════════════════ */
+function renderQuestion(){
+  const q=questions[current]; /* La domanda corrente */
+
+  /* Aggiorna la barra di avanzamento.
+     Es. domanda 3 di 10 = (3/10)*100 = 30% */
+  const pct=Math.round(((current+1)/questions.length)*100);
+  document.getElementById('prog-fill').style.width=pct+'%';
+  document.getElementById('prog-label').textContent=`Domanda ${current+1} di ${questions.length}`;
+  document.getElementById('prog-pct').textContent=pct+'%';
+
+  const L=['A','B','C','D']; /* Lettere per le opzioni */
+
+  /*
+    innerHTML inserisce HTML come stringa dentro l'elemento.
+    I template literals (`) permettono di usare ${variabile} dentro le stringhe.
+    .map() trasforma ogni opzione in una stringa HTML, poi .join('') le unisce.
+  */
+  document.getElementById('question-area').innerHTML=`
+    <div class="card">
+      <div class="q-number">Domanda ${current+1} — ${q.category}</div>
+      <div class="q-icon">${q.icon}</div>
+      <div class="q-text">${q.text}</div>
+      <div class="options">
+        ${q.options.map((o,i)=>`
+          <div class="opt ${answers[current]===i?'selected':''}" onclick="selectOpt(${i})">
+            <span class="opt-letter">${L[i]}</span>
+            <span>${o.text}</span>
+          </div>`).join('')}
+      </div>
+      <div class="nav-row">
+        <!-- Il pulsante Indietro è invisibile (visibility:hidden) sulla prima domanda -->
+        <button class="btn btn-back" onclick="goBack()" ${current===0?'style="visibility:hidden"':''}>← Indietro</button>
+        <!-- Il pulsante Avanti è disabilitato finché non si seleziona una risposta -->
+        <button class="btn btn-next" onclick="goNext()" ${answers[current]===null?'disabled':''}>
+          ${current===questions.length-1?'Vedi risultati →':'Avanti →'}
+        </button>
+      </div>
+    </div>`;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   FUNZIONE: selectOpt(i)
+   Chiamata quando l'utente clicca su un'opzione.
+   - i: indice dell'opzione scelta (0, 1, 2 o 3)
+   Salva la risposta, aggiorna il punteggio della categoria,
+   ridisegna la domanda e (se non è l'ultima) avanza automaticamente.
+═══════════════════════════════════════════════════════════════ */
+function selectOpt(i){
+  answers[current]=i; /* Salva la risposta */
+  /* Aggiorna il punteggio della categoria con quello dell'opzione scelta */
+  categories[questions[current].category].score=questions[current].options[i].score;
+  renderQuestion(); /* Ridisegna per mostrare l'opzione selezionata */
+
+  /* Auto-avanza dopo 600ms, MA solo se non è l'ultima domanda.
+     clearTimeout annulla eventuali timer precedenti per evitare avanzamenti doppi. */
+  clearTimeout(window._autoNext);
+  if(current < questions.length - 1){
+    window._autoNext = setTimeout(()=>goNext(), 600);
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   FUNZIONE: goNext()
+   Va alla domanda successiva oppure mostra i risultati
+   se siamo all'ultima domanda.
+═══════════════════════════════════════════════════════════════ */
+function goNext(){
+  if(answers[current]===null)return; /* Non avanzare se non c'è risposta */
+  if(current===questions.length-1) showResults(); /* Ultima domanda → risultati */
+  else{current++;renderQuestion();} /* Altrimenti prossima domanda */
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   FUNZIONE: goBack()
+   Torna alla domanda precedente (se non siamo già alla prima).
+═══════════════════════════════════════════════════════════════ */
+function goBack(){
+  if(current>0){current--;renderQuestion();}
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   FUNZIONE: buildGaugeSVG(pct)
+   Costruisce il tachimetro (gauge) come immagine SVG.
+   SVG = Scalable Vector Graphics: grafica vettoriale nel browser.
+   - pct: percentuale del punteggio (0-100)
+   Restituisce una stringa HTML con il codice SVG completo.
+═══════════════════════════════════════════════════════════════ */
+function pctToDeg(p){
+  /* Converte una percentuale in gradi di rotazione dell'ago.
+     0% = -90° (sinistra), 100% = +90° (destra) */
+  return -90+(p/100)*180;
+}
+
+function buildGaugeSVG(pct){
+  /* Centro e dimensioni del tachimetro */
+  const CX=160, CY=145, R=110, IR=68, gap=2;
+
+  /* I 7 segmenti colorati dal verde al rosso scuro */
+  const SC=['#4caf50','#8bc34a','#cddc39','#ffc107','#ff9800','#f44336','#c62828'];
+  const sd=180/SC.length; /* Gradi per ogni segmento */
+
+  /* Funzione interna che converte gradi → coordinate x,y sul cerchio */
+  function xy(deg,r){
+    const a=(deg+180)*Math.PI/180; /* Converte in radianti */
+    return[CX+r*Math.cos(a), CY+r*Math.sin(a)];
+  }
+
+  /* Costruisce i percorsi SVG per ogni segmento colorato */
+  let arcs='';
+  SC.forEach((c,i)=>{
+    /* Calcola i 4 punti angolari del segmento (arco esterno + arco interno) */
+    const[x1,y1]=xy(i*sd+gap/2,R),   [x2,y2]=xy((i+1)*sd-gap/2,R);
+    const[x3,y3]=xy((i+1)*sd-gap/2,IR),[x4,y4]=xy(i*sd+gap/2,IR);
+    /* A = arc (arco), Z = chiude il percorso */
+    arcs+=`<path d="M${x1},${y1} A${R},${R} 0 0,1 ${x2},${y2} L${x3},${y3} A${IR},${IR} 0 0,0 ${x4},${y4}Z" fill="${c}"/>`;
+  });
+
+  /* Posizioni delle etichette BASSO / MEDIO / ALTO */
+  const[lx,ly]=xy(4,R+18),[mx,my]=xy(90,R+18),[hx,hy]=xy(176,R+18);
+
+  /* L'ago parte sempre da -90° (sinistra = 0%) e viene poi animato da JavaScript */
+  return`<svg class="gauge-svg" viewBox="0 0 320 168" xmlns="http://www.w3.org/2000/svg">
+    ${arcs}
+    <!-- Cerchio bianco interno che crea la forma ad arco -->
+    <circle cx="${CX}" cy="${CY}" r="${IR-3}" fill="#111827"/>
+    <!-- Etichette testuali -->
+    <text x="${lx-4}" y="${ly+4}" text-anchor="middle" font-family="Inter" font-size="10" font-weight="700" fill="#4a5e7a">BASSO</text>
+    <text x="${mx}" y="${my-6}" text-anchor="middle" font-family="Inter" font-size="10" font-weight="700" fill="#4a5e7a">MEDIO</text>
+    <text x="${hx+4}" y="${hy+4}" text-anchor="middle" font-family="Inter" font-size="10" font-weight="700" fill="#4a5e7a">ALTO</text>
+    <!-- L'ago: linea + cerchio pivot + puntino verde.
+         transform-origin definisce il centro di rotazione (il pivot dell'ago).
+         Parte dalla posizione -90° (sinistra) e viene animato da animateNeedle(). -->
+    <g id="gneedle" style="transform-origin:${CX}px ${CY}px;transform:rotate(${pctToDeg(0)}deg)">
+      <line x1="${CX}" y1="${CY-92}" x2="${CX}" y2="${CY+15}" stroke="#2a4a7a" stroke-width="3.5" stroke-linecap="round"/>
+      <circle cx="${CX}" cy="${CY}" r="11" fill="#1e3a5f" stroke="#3a5a8a" stroke-width="1.5"/>
+      <circle cx="${CX}" cy="${CY}" r="5" fill="#00c896"/>
+    </g>
+  </svg>`;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   FUNZIONE: animateNeedle(pct)
+   Anima l'ago del tachimetro dalla posizione 0% fino al punteggio.
+   Usa requestAnimationFrame per un'animazione fluida frame per frame.
+   - ease() è una funzione di "easing" che fa rallentare l'ago alla fine
+     (come una porta che si chiude lentamente).
+═══════════════════════════════════════════════════════════════ */
+function animateNeedle(pct){
+  const el=document.getElementById('gneedle');
+  if(!el)return;
+  const s=pctToDeg(0);   /* Angolo di partenza (-90°) */
+  const e=pctToDeg(pct); /* Angolo di arrivo */
+  const dur=1600;         /* Durata animazione: 1.6 secondi */
+  const t0=performance.now(); /* Timestamp di inizio */
+
+  /* Funzione di easing: t va da 0 a 1, il risultato accelera poi rallenta */
+  const ease=t=>1-Math.pow(1-t,4);
+
+  /* Funzione eseguita a ogni frame del browser */
+  const step=now=>{
+    const t=Math.min((now-t0)/dur,1); /* Progresso da 0 a 1 */
+    el.style.transform=`rotate(${s+(e-s)*ease(t)}deg)`; /* Ruota l'ago */
+    if(t<1)requestAnimationFrame(step); /* Continua finché t < 1 */
+  };
+  requestAnimationFrame(step);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   FUNZIONE: buildRadarSVG(cs)
+   Costruisce il grafico a ragnatela (radar chart) come SVG.
+   - cs: oggetto con i punteggi per categoria (es. {Password:6, Reti:0, ...})
+   Ogni categoria è un "asse" del poligono.
+   Il poligono verde mostra quanto è "pieno" ogni asse.
+═══════════════════════════════════════════════════════════════ */
+function buildRadarSVG(cs){
+  const cats=Object.keys(cs); /* Nomi delle categorie */
+  const n=cats.length;         /* Numero di categorie (10) */
+  const CX=150, CY=150, R=105; /* Centro e raggio del radar */
+
+  /* Calcola l'angolo di ogni asse (distribuiti equamente intorno al centro) */
+  const ang=i=>i*(2*Math.PI/n)-Math.PI/2; /* -PI/2 = parte dall'alto */
+
+  /* Converte indice + raggio in coordinate x,y */
+  const pt=(i,r)=>[CX+r*Math.cos(ang(i)), CY+r*Math.sin(ang(i))];
+
+  /* I 4 cerchi concentrici di sfondo (25%, 50%, 75%, 100%) */
+  let rings=[.25,.5,.75,1].map(f=>`
+    <polygon points="${cats.map((_,i)=>pt(i,R*f).join(',')).join(' ')}"
+             fill="none" stroke="#1e3a5f" stroke-width="1"/>`).join('');
+
+  /* Le linee dal centro verso ogni vertice */
+  let axes=cats.map((_,i)=>{
+    const[x,y]=pt(i,R);
+    return`<line x1="${CX}" y1="${CY}" x2="${x}" y2="${y}" stroke="#1e3a5f" stroke-width="1"/>`;
+  }).join('');
+
+  /* Il poligono verde che rappresenta i punteggi dell'utente.
+     Per ogni categoria, il punto è a distanza proporzionale al punteggio (0-10). */
+  const poly=cats.map((c,i)=>pt(i,R*(cs[c]/10)).join(',')).join(' ');
+
+  /* I puntini verdi sui vertici del poligono */
+  const dots=cats.map((c,i)=>{
+    const[x,y]=pt(i,R*(cs[c]/10));
+    return`<circle cx="${x}" cy="${y}" r="4" fill="#00c896"/>`;
+  }).join('');
+
+  /* Le emoji delle categorie ai vertici esterni */
+  const lbls=cats.map((c,i)=>{
+    const[x,y]=pt(i,R+22);
+    return`<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="#7a8ba8">${catIcons[c]||c.slice(0,3)}</text>`;
+  }).join('');
+
+  return`<svg class="radar-svg" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+    ${rings}${axes}
+    <!-- Il poligono dei punteggi: riempimento verde semitrasparente + bordo verde -->
+    <polygon points="${poly}" fill="rgba(0,200,150,.15)" stroke="#00c896" stroke-width="2"/>
+    ${dots}${lbls}
+  </svg>`;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   FUNZIONE: shareResult(pct, label)
+   Copia negli appunti un testo con il punteggio e il link del sondaggio.
+   Prova prima l'API moderna (navigator.clipboard), che funziona su HTTPS.
+   Se fallisce (es. file locale), usa il metodo vecchio (execCommand).
+═══════════════════════════════════════════════════════════════ */
+function shareResult(pct,label){
+  const text=`🔐 Ho completato il test di sicurezza digitale!\n\nPunteggio: ${pct}% — ${label}\n\nE tu, quanto sei al sicuro online?\nhttps://alessandronoal2020-alt.github.io/ed_civica/progettoEd_civica4.html`;
+
+  if(navigator.clipboard && window.isSecureContext){
+    /* Metodo moderno: funziona su HTTPS */
+    navigator.clipboard.writeText(text).then(()=>showToast('✓ Testo copiato negli appunti!'));
+  } else {
+    /* Metodo vecchio: funziona anche su file:// locale */
+    const ta=document.createElement('textarea');
+    ta.value=text;
+    ta.style.cssText='position:fixed;top:-9999px;left:-9999px'; /* Nascosta fuori schermo */
+    document.body.appendChild(ta);
+    ta.focus();ta.select();
+    try{document.execCommand('copy');showToast('✓ Testo copiato negli appunti!');}
+    catch(e){showToast('Copia non riuscita');}
+    document.body.removeChild(ta);
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   FUNZIONE: showToast(msg)
+   Mostra il messaggio verde in basso per 3 secondi.
+   Aggiunge la classe "show" (che fa scorrere il toast su)
+   e la rimuove dopo 3 secondi.
+═══════════════════════════════════════════════════════════════ */
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   DATI: BADGE / ACHIEVEMENT
+   Ogni badge ha:
+   - id: identificatore univoco
+   - icon: emoji
+   - label: nome del badge
+   - check: funzione che riceve (punteggi categoria, punteggio totale)
+             e restituisce true se il badge è guadagnato
+═══════════════════════════════════════════════════════════════ */
+const allBadges=[
+  {id:'pw', icon:'🔑', label:'Password Master',    check:c=>c.Password>=10},
+  {id:'2fa',icon:'📱', label:'2FA Pro',             check:c=>c.Autenticazione>=10},
+  {id:'vpn',icon:'📡', label:'VPN Hero',            check:c=>c.Reti>=10},
+  {id:'ph', icon:'🎣', label:'Anti-Phishing',       check:c=>c.Phishing>=10},
+  {id:'upd',icon:'🔄', label:'Sempre Aggiornato',   check:c=>c.Aggiornamenti>=10},
+  {id:'sh', icon:'🛡️', label:'Scudo Digitale',      check:c=>c.Protezione>=10},
+  {id:'bk', icon:'☁️', label:'Backup King',         check:c=>c.Backup>=10},
+  {id:'pr', icon:'🔒', label:'Privacy Guard',       check:c=>c.Privacy>=10},
+  {id:'nb', icon:'🌐', label:'Navigatore Sicuro',   check:c=>c.Navigazione>=10},
+  {id:'so', icon:'📲', label:'Social Aware',        check:c=>c.Social>=10},
+  {id:'ex', icon:'🏆', label:'Cyber Expert',        check:(c,p)=>p>=85},
+  {id:'ok', icon:'⭐', label:'Utente Consapevole',  check:(c,p)=>p>=60&&p<85},
+];
+
+
+/* ═══════════════════════════════════════════════════════════════
+   FUNZIONE: showResults()
+   La funzione principale che mostra i risultati finali.
+   Viene chiamata dopo l'ultima domanda.
+   Calcola punteggi, genera tutto l'HTML dei risultati e lo inserisce
+   nella pagina. Poi avvia le animazioni (ago, QR code).
+═══════════════════════════════════════════════════════════════ */
+function showResults(){
+  /* Nasconde la barra di avanzamento */
+  document.getElementById('progress-section').style.display='none';
+
+  /* ── Calcolo punteggio totale ──
+     Somma i punteggi di tutte le risposte date.
+     reduce() scorre l'array delle risposte accumulando la somma.
+     La percentuale è (punteggio / massimo possibile) * 100. */
+  const totalMax=questions.length*10; /* Es. 10 domande × 10 = 100 */
+  const totalScore=answers.reduce((s,a,i)=>
+    s+(a!==null?questions[i].options[a].score:0), 0);
+  const pct=Math.round((totalScore/totalMax)*100);
+  const level=getLevel(pct);
+
+  /* Crea un oggetto {categoria: punteggio} per il radar e il dettaglio */
+  const catScores={};
+  Object.entries(categories).forEach(([cat,v])=>{catScores[cat]=v.score;});
+
+  /* Filtra i badge guadagnati */
+  const earnedBadges=allBadges.filter(b=>b.check(catScores,pct));
+
+  /* ── Consigli personalizzati per categoria ──
+     Per ogni categoria ci sono 3 consigli (punteggio basso/medio/alto).
+     Il consiglio mostrato è quello della categoria con il punteggio più basso. */
+  const catTips = {
+    Password:{
+      0:  "Non usare mai la stessa password: è la prima cosa che un hacker prova. Installa subito un password manager gratuito come Bitwarden.",
+      5:  "Buon inizio, ma tenere le password a memoria o su un file è rischioso. Un password manager le genera e le ricorda per te in modo sicuro.",
+      10: "Ottimo! Continua a usare il password manager e verifica periodicamente su haveibeenpwned.com se le tue email sono state violate."
+    },
+    Autenticazione:{
+      0:  "Senza 2FA i tuoi account sono vulnerabili anche se la password è forte. Attiva subito l'autenticazione a due fattori almeno su email e banca.",
+      5:  "Il 2FA via SMS è meglio di niente, ma può essere intercettato. Passa a un'app come Google Authenticator o Authy.",
+      10: "Perfetto! L'app authenticator è il metodo più sicuro. Considera anche le chiavi hardware (YubiKey) per gli account più critici."
+    },
+    Reti:{
+      0:  "Le reti Wi-Fi pubbliche sono una trappola: chiunque può intercettare il tuo traffico. Usa i dati mobili oppure installa una VPN affidabile.",
+      5:  "Bene che eviti operazioni sensibili, ma anche solo navigare su reti pubbliche espone i tuoi dati. Una VPN risolve il problema completamente.",
+      10: "Ottimo! La VPN è lo scudo giusto. Assicurati che il provider non registri i log e che usi protocolli moderni come WireGuard."
+    },
+    Phishing:{
+      0:  "Il phishing è la causa del 90% delle violazioni. Prima di cliccare qualsiasi link ricevuto via email o SMS, verifica sempre mittente e URL.",
+      5:  "Buona abitudine ignorare gli allegati, ma anche i link nel corpo del messaggio sono pericolosi. Controlla sempre l'URL prima di aprirlo.",
+      10: "Eccellente! Sei già molto attento. Per il massimo della protezione considera un'estensione browser anti-phishing come uBlock Origin."
+    },
+    Aggiornamenti:{
+      0:  "I dispositivi non aggiornati hanno vulnerabilità note che gli hacker sfruttano in pochi secondi. Attiva gli aggiornamenti automatici adesso.",
+      5:  "Aggiornare ogni tanto non basta: le patch di sicurezza critiche vanno applicate entro 24-48 ore dalla pubblicazione.",
+      10: "Perfetto! Tenersi aggiornati è una delle difese più efficaci. Controlla anche che le app meno usate siano aggiornate, non solo il sistema."
+    },
+    Protezione:{
+      0:  "Senza antivirus il tuo dispositivo è indifeso. Su Windows attiva almeno Windows Defender, su Mac considera Malwarebytes gratuito.",
+      5:  "Un antivirus non aggiornato è quasi inutile: i database delle minacce cambiano ogni giorno. Attiva gli aggiornamenti automatici.",
+      10: "Ottimo! Assicurati che la protezione in tempo reale sia sempre attiva e fai una scansione completa almeno una volta al mese."
+    },
+    Backup:{
+      0:  "Senza backup, un attacco ransomware o un guasto hardware significa perdere tutto per sempre. Inizia oggi con Google Drive o un disco esterno.",
+      5:  "Un backup occasionale non è sufficiente. Segui la regola 3-2-1: 3 copie, su 2 supporti diversi, di cui 1 fuori casa o su cloud.",
+      10: "Eccellente! Ricordati di testare periodicamente il ripristino: un backup che non funziona è come non averlo."
+    },
+    Privacy:{
+      0:  "Molte app raccolgono dati che non servono loro. Vai subito nelle impostazioni del telefono e nega le autorizzazioni non necessarie.",
+      5:  "Buon inizio! Controlla anche le app installate da tempo: spesso accumulano permessi che non ricordi di aver concesso.",
+      10: "Ottimo! Vai oltre: controlla anche quali app di terze parti hanno accesso ai tuoi account Google, Apple o Facebook."
+    },
+    Navigazione:{
+      0:  "HTTP senza S significa che i tuoi dati viaggiano in chiaro. Non inserire mai password o dati personali su siti senza HTTPS.",
+      5:  "Il lucchetto è un buon primo controllo, ma verifica anche che il dominio sia corretto: paypa1.com non è paypal.com.",
+      10: "Ottimo! Per il massimo della sicurezza usa un browser con protezione avanzata e considera di abilitare DNS over HTTPS."
+    },
+    Social:{
+      0:  "I link sui social sono uno dei vettori di attacco più usati, anche da account amici compromessi. Analizza ogni link su virustotal.com prima di aprirlo.",
+      5:  "Bene che tu sia cauto con i dati personali. Ricorda però che anche solo visitare un sito malevolo può installare malware.",
+      10: "Eccellente! Mantieni questa abitudine. Considera anche di usare un link expander per vedere dove portano i link abbreviati."
+    }
+  };
+
+  /*
+    Trova la categoria con il punteggio più basso.
+    reduce() confronta ogni coppia [categoria, punteggio] e tiene quella con il valore minore.
+    Esempio: se Password=6 e Reti=0, worstCat sarà ["Reti", 0]
+  */
+  const worstCat=Object.entries(catScores).reduce((a,b)=>a[1]<=b[1]?a:b);
+  const worstName=worstCat[0];  /* Nome categoria peggiore */
+  const worstScore=worstCat[1]; /* Punteggio categoria peggiore */
+
+  /* Sceglie il livello del consiglio in base al punteggio */
+  const tipLevel=worstScore<=2?0:worstScore<=6?5:10;
+  const tipText=catTips[worstName][tipLevel]; /* Il testo del consiglio */
+  const tipCategory=`${catIcons[worstName]} ${worstName}`; /* Es. "🔑 Password" */
+
+  /* ── Genera l'HTML del dettaglio per categoria (nell'accordion) ── */
+  const catEntries=Object.entries(categories);
+
+  /*
+    Inserisce tutto l'HTML dei risultati nel contenitore principale.
+    Ogni sezione è generata dinamicamente con i dati calcolati sopra.
+  */
+  document.getElementById('question-area').innerHTML=`
+    <div class="result-wrap">
+      <div class="result-card" style="--level-color:${level.color}">
+
+        <!-- Tachimetro animato -->
+        <div class="gauge-wrap">${buildGaugeSVG(pct)}</div>
+
+        <!-- Percentuale e livello sotto al tachimetro -->
+        <div class="gauge-center-label">
+          <div class="gauge-pct-num" style="color:${level.color}">${pct}%</div>
+          <div class="gauge-level-label" style="color:${level.color}">${level.label}</div>
+        </div>
+
+        <!-- Descrizione breve del livello -->
+        <p class="result-desc">${level.desc}</p>
+
+        <!-- Badge: guadagnati in verde, non guadagnati in grigio -->
+        <div class="badges-section">
+          <div class="section-label">[ achievement: ${earnedBadges.length}/${allBadges.length} sbloccati ]</div>
+          <div class="badges-grid">
+            ${allBadges.map(b=>{
+              const earned=earnedBadges.some(x=>x.id===b.id);
+              return`<div class="badge-item ${earned?'earned':''}">
+                <span class="badge-icon">${b.icon}</span>
+                <span>${b.label}</span>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- Grafico radar (ragnatela) -->
+        <div class="radar-section">
+          <div class="section-label">[ grafico a ragnatela ]</div>
+          <div class="radar-wrap">${buildRadarSVG(catScores)}</div>
+        </div>
+
+        <!-- Accordion: dettaglio punteggi per categoria (chiuso di default) -->
+        <div class="accordion" id="acc">
+          <button class="accordion-trigger" onclick="toggleAccordion('acc')">
+            <span class="accordion-trigger-left">
+              <span style="font-size:16px">📊</span>
+              <span>Dettaglio per categoria</span>
+            </span>
+            <span class="acc-chevron"></span>
+          </button>
+          <div class="accordion-body">
+            <div class="accordion-inner">
+              <!-- Una riga per ogni categoria con nome, percentuale e barra -->
+              ${catEntries.map(([cat,v],idx)=>{
+                const cp=Math.round((v.score/v.max)*100);
+                /* Verde se ≥70%, arancione se ≥40%, rosso altrimenti */
+                const bc=cp>=70?'#00c896':cp>=40?'#f5a623':'#e24b4a';
+                return`<div class="breakdown-item">
+                  <div class="breakdown-top">
+                    <span>${catIcons[cat]||''} ${cat}</span>
+                    <span class="breakdown-score-txt" style="color:${bc}">${cp}%</span>
+                  </div>
+                  <div class="breakdown-bar-track">
+                    <!-- La barra parte da width:0 e viene animata da toggleAccordion() -->
+                    <div class="breakdown-bar-fill" id="bar-${idx}"
+                         style="background:${bc}" data-pct="${cp}"></div>
+                  </div>
+                </div>`;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+
+        <!-- Consiglio personalizzato sulla categoria più debole -->
+        <div class="tip-box">
+          <div class="tip-label">[ punto debole: ${tipCategory} ]</div>
+          <div class="tip-text">${tipText}</div>
+        </div>
+
+        <!-- Pulsanti azione -->
+        <div class="action-row">
+          <button class="action-btn" onclick="shareResult(${pct},'${level.label}')">📤 Condividi</button>
+          <button class="action-btn primary" onclick="restart()">↺ Ricomincia</button>
+        </div>
+
+      </div><!-- fine .result-card -->
+
+      <!-- Sezione attacchi informatici (costruita da buildAttacksSection()) -->
+      ${buildAttacksSection()}
+
+      <!-- Riquadro video YouTube: apre in nuova scheda -->
+      <div class="video-box">
+        <div class="video-label">[ guarda: cyberattacchi in tempo reale ]</div>
+        <a href="https://www.youtube.com/watch?v=-CdD2ToiuUc" target="_blank" rel="noopener" class="video-thumb-link">
+          <img
+            src="https://i.ytimg.com/vi/-CdD2ToiuUc/hqdefault.jpg"
+            alt="Cyberattacchi in tempo reale"
+            style="width:100%;border-radius:10px;display:block;"
+          />
+          <div class="video-play-btn">
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="white"><path d="M8 5v14l11-7z"/></svg>
+          </div>
+        </a>
+        <p class="video-caption">Clicca per guardare su YouTube →</p>
+      </div>
+
+      <!-- Riquadro QR code Kaspersky -->
+      <div class="kaspersky-box">
+        <div class="kaspersky-header">
+          <div class="kaspersky-dot"></div>
+          <div class="kaspersky-title">Mappa attacchi in tempo reale</div>
+          <div class="kaspersky-dot"></div>
+        </div>
+        <p class="kaspersky-sub">Kaspersky Cybermap — minacce globali live</p>
+        <!-- Il QR code viene generato qui dentro da QRCode.js -->
+        <a class="qr-link" href="https://cybermap.kaspersky.com" target="_blank" rel="noopener">
+          <div class="qr-container" id="qr-code"></div>
+        </a>
+        <div class="qr-caption"><span>↑ clicca</span> per aprire · oppure inquadra con il telefono</div>
+        <div class="kaspersky-desc">Visualizza in tempo reale gli attacchi informatici in corso nel mondo: malware, intrusioni, exploit e molto altro.</div>
+      </div>
+
+    </div><!-- fine .result-wrap -->`;
+
+  /*
+    requestAnimationFrame aspetta che il browser abbia disegnato il DOM
+    prima di avviare le animazioni (altrimenti l'ago non esiste ancora).
+  */
+  requestAnimationFrame(()=>{
+    animateNeedle(pct); /* Anima l'ago del tachimetro */
+
+    /* Genera il QR code dentro #qr-code se la libreria è caricata */
+    if(typeof QRCode!=='undefined'){
+      new QRCode(document.getElementById('qr-code'),{
+        text:'https://cybermap.kaspersky.com',
+        width:150, height:150,
+        colorDark:'#0a0f1e',   /* Colore dei quadratini */
+        colorLight:'#ffffff',  /* Colore dello sfondo */
+        correctLevel:QRCode.CorrectLevel.H /* Alta correzione errori */
+      });
+    }
+  });
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   FUNZIONE: buildAttacksSection()
+   Costruisce l'HTML dell'intera sezione "Attacchi informatici".
+   Usa i dati dell'array attacks[] definito in cima.
+   Restituisce una stringa HTML con:
+   - L'intestazione cliccabile
+   - I filtri per pericolo
+   - Le 10 card degli attacchi (ognuna con descrizione e precauzioni)
+═══════════════════════════════════════════════════════════════ */
+function buildAttacksSection(){
+
+  /* Costruisce l'HTML per ogni attacco */
+  const cards=attacks.map(a=>{
+
+    /* Classe CSS e testo del badge pericolo */
+    const dc=a.danger==='alto'?'danger-alto':a.danger==='medio'?'danger-medio':'danger-basso';
+    const dl=a.danger==='alto'?'🔴 Alto':a.danger==='medio'?'🟡 Medio':'🟢 Basso';
+
+    /* Costruisce le 3 liste di precauzioni (facile/medio/avanzato).
+       Solo quella "facile" è visibile di default (classe "visible"). */
+    const precs=['facile','medio','avanzato'].map(lvl=>`
+      <div class="prec-list ${lvl} ${lvl==='facile'?'visible':''}" id="prec-${a.id}-${lvl}">
+        ${a.precauzioni[lvl].map(p=>`
+          <div class="prec-item">
+            <div class="prec-dot"></div>
+            <span>${p}</span>
+          </div>`).join('')}
+      </div>`).join('');
+
+    return`<div class="attack-card" id="atk-${a.id}">
+      <!-- Intestazione cliccabile della card -->
+      <div class="attack-card-header" onclick="toggleAttack('${a.id}')">
+        <div class="attack-card-left">
+          <span class="attack-emoji">${a.emoji}</span>
+          <div>
+            <div class="attack-name">${a.name}</div>
+            <div class="attack-tagline">${a.tagline}</div>
+          </div>
+        </div>
+        <div class="attack-card-right">
+          <span class="danger-badge ${dc}">${dl}</span>
+          <span class="attack-chevron"></span>
+        </div>
+      </div>
+      <!-- Corpo nascosto della card (aperto da toggleAttack()) -->
+      <div class="attack-body">
+        <div class="attack-body-inner">
+          <p class="attack-desc">${a.desc}</p>
+          <!-- Tab per selezionare il livello di precauzioni -->
+          <div class="prec-tabs">
+            <button class="prec-tab facile active" onclick="switchPrec(event,'${a.id}','facile')">🟢 Facile</button>
+            <button class="prec-tab medio"         onclick="switchPrec(event,'${a.id}','medio')">🟡 Medio</button>
+            <button class="prec-tab avanzato"      onclick="switchPrec(event,'${a.id}','avanzato')">🔴 Avanzato</button>
+          </div>
+          ${precs}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return`<div class="attacks-section" id="attacks-section">
+    <!-- Intestazione cliccabile dell'intera sezione -->
+    <div class="attacks-header-box" onclick="toggleAttacksSection()">
+      <div class="attacks-header-inner">
+        <div class="attacks-header-left">
+          <span class="attacks-header-icon">⚠️</span>
+          <div>
+            <div class="attacks-header-title">Attacchi informatici più comuni</div>
+            <div class="attacks-header-sub">10 minacce reali · precauzioni per ogni livello</div>
+          </div>
+        </div>
+        <span class="attacks-chevron"></span>
+      </div>
+    </div>
+    <!-- Corpo nascosto della sezione -->
+    <div class="attacks-body">
+      <div class="attacks-body-inner">
+        <!-- Filtri per livello di pericolo -->
+        <div class="diff-filter">
+          <button class="diff-btn active" data-diff="all"  onclick="filterAttacks(this,'all')">Tutti</button>
+          <button class="diff-btn" data-diff="alto"        onclick="filterAttacks(this,'alto')">🔴 Pericolo alto</button>
+          <button class="diff-btn" data-diff="medio"       onclick="filterAttacks(this,'medio')">🟡 Pericolo medio</button>
+        </div>
+        <!-- Lista delle card attacchi -->
+        <div id="attacks-list">${cards}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   FUNZIONE: toggleAttacksSection()
+   Apre/chiude la sezione principale degli attacchi informatici.
+   Aggiunge/rimuove la classe "open" che CSS usa per mostrare il corpo.
+═══════════════════════════════════════════════════════════════ */
+function toggleAttacksSection(){
+  document.getElementById('attacks-section').classList.toggle('open');
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   FUNZIONE: toggleAttack(id)
+   Apre/chiude la card di un singolo attacco.
+═══════════════════════════════════════════════════════════════ */
+function toggleAttack(id){
+  document.getElementById('atk-'+id).classList.toggle('open');
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   FUNZIONE: switchPrec(e, attackId, lvl)
+   Cambia il livello di precauzioni visualizzato (facile/medio/avanzato).
+   - e: l'evento click (serve per prendere il pulsante cliccato)
+   - attackId: id dell'attacco (es. 'phishing')
+   - lvl: livello scelto ('facile', 'medio', 'avanzato')
+═══════════════════════════════════════════════════════════════ */
+function switchPrec(e,attackId,lvl){
+  /* stopPropagation() evita che il click arrivi anche all'intestazione
+     della card (che altrimenti si chiuderebbe) */
+  e.stopPropagation();
+
+  /* Trova il corpo della card e aggiorna i tab */
+  const body=document.getElementById('atk-'+attackId).querySelector('.attack-body-inner');
+  body.querySelectorAll('.prec-tab').forEach(t=>t.classList.remove('active'));
+  e.target.classList.add('active');
+
+  /* Mostra solo la lista del livello scelto */
+  ['facile','medio','avanzato'].forEach(l=>{
+    const el=document.getElementById(`prec-${attackId}-${l}`);
+    if(el) el.classList.toggle('visible', l===lvl);
+  });
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   FUNZIONE: filterAttacks(btn, diff)
+   Filtra le card degli attacchi per livello di pericolo.
+   - btn: il pulsante filtro cliccato
+   - diff: 'all', 'alto' o 'medio'
+   Nasconde le card che non corrispondono al filtro.
+═══════════════════════════════════════════════════════════════ */
+function filterAttacks(btn,diff){
+  /* Rimuove "active" da tutti i filtri, poi lo aggiunge a quello cliccato */
+  document.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+
+  /* Mostra/nasconde ogni card in base al pericolo */
+  document.querySelectorAll('.attack-card').forEach(card=>{
+    const id=card.id.replace('atk-','');
+    const atk=attacks.find(a=>a.id===id);
+    if(!atk)return;
+    card.style.display=(diff==='all' || atk.danger===diff)?'block':'none';
+  });
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   FUNZIONE: toggleAccordion(id)
+   Apre/chiude l'accordion del dettaglio categorie.
+   Quando si apre, anima le barre di avanzamento una dopo l'altra
+   con un ritardo crescente (effetto a cascata).
+═══════════════════════════════════════════════════════════════ */
+function toggleAccordion(id){
+  const acc=document.getElementById(id);
+  const wasOpen=acc.classList.contains('open');
+  acc.classList.toggle('open');
+
+  /* Anima le barre solo all'apertura (non alla chiusura) */
+  if(!wasOpen){
+    acc.querySelectorAll('.breakdown-bar-fill').forEach((b,i)=>{
+      /* setTimeout crea un ritardo crescente: 0ms, 70ms, 140ms, 210ms... */
+      setTimeout(()=>{b.style.width=b.dataset.pct+'%';}, i*70);
+    });
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   FUNZIONE: restart()
+   Resetta tutto e torna alla prima domanda.
+   Azzera l'indice corrente, le risposte e i punteggi delle categorie.
+═══════════════════════════════════════════════════════════════ */
+function restart(){
+  current=0;
+  answers=new Array(questions.length).fill(null);
+  Object.keys(categories).forEach(k=>{categories[k].score=0;});
+  document.getElementById('progress-section').style.display='block';
+  renderQuestion();
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   GESTIONE TASTIERA
+   Ascolta i tasti premuti durante il sondaggio:
+   - ← o Backspace: torna indietro
+   - → o Enter o Spazio: avanza (solo se c'è una risposta)
+   Non funziona nella sezione risultati (verifica che .card esista).
+═══════════════════════════════════════════════════════════════ */
+document.addEventListener('keydown', function(e){
+  /* Ignora se si sta scrivendo in un campo di testo */
+  if(e.target.tagName==='INPUT' || e.target.tagName==='TEXTAREA') return;
+
+  /* Ignora se siamo nella pagina dei risultati (non c'è la .card) */
+  if(!document.querySelector('.card')) return;
+
+  /* Tasto ← o Backspace: torna alla domanda precedente */
+  if(e.key==='ArrowLeft' || e.key==='Backspace'){
+    e.preventDefault(); /* Evita che Backspace faccia tornare indietro nel browser */
+    clearTimeout(window._autoNext); /* Cancella eventuale auto-avanzamento in corso */
+    goBack();
+    return;
+  }
+
+  /* Tasto →, Enter o Spazio: avanza alla prossima domanda (solo se risposta data) */
+  if(e.key==='ArrowRight' || e.key==='Enter' || e.key===' '){
+    if(answers[current]!==null){
+      e.preventDefault();
+      clearTimeout(window._autoNext);
+      goNext();
+    }
+    return;
+  }
+});
+
+
+
+/* ═══════════════════════════════════════════════════════════════
+   AVVIO
+   Questa è l'ultima riga eseguita: disegna la prima domanda.
+   Tutto il resto avviene in risposta a eventi (click, tasti).
+═══════════════════════════════════════════════════════════════ */
+renderQuestion();
+
+</script>
+</body>
+</html>
