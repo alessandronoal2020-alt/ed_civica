@@ -1331,20 +1331,19 @@ function showResults(){
       <!-- Sezione attacchi informatici (costruita da buildAttacksSection()) -->
       ${buildAttacksSection()}
 
-      <!-- Riquadro video YouTube: apre in nuova scheda -->
+      <!-- Video YouTube embed (funziona su GitHub Pages HTTPS) -->
       <div class="video-box">
         <div class="video-label">[ guarda: cyberattacchi in tempo reale ]</div>
-        <a href="https://www.youtube.com/watch?v=-CdD2ToiuUc" target="_blank" rel="noopener" class="video-thumb-link">
-          <img
-            src="https://i.ytimg.com/vi/-CdD2ToiuUc/hqdefault.jpg"
-            alt="Cyberattacchi in tempo reale"
-            style="width:100%;border-radius:10px;display:block;"
-          />
-          <div class="video-play-btn">
-            <svg viewBox="0 0 24 24" width="32" height="32" fill="white"><path d="M8 5v14l11-7z"/></svg>
-          </div>
-        </a>
-        <p class="video-caption">Clicca per guardare su YouTube →</p>
+        <div style="position:relative;width:100%;padding-bottom:56.25%;border-radius:10px;overflow:hidden;">
+          <iframe
+            style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"
+            src="https://www.youtube.com/embed/-CdD2ToiuUc?rel=0&modestbranding=1"
+            title="Cyberattacchi in tempo reale"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen>
+          </iframe>
+        </div>
       </div>
 
       <!-- Riquadro QR code Kaspersky -->
